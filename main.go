@@ -1,12 +1,14 @@
 package main
 
 import (
+	"githhub.com/mcdexio/mai3-data/conf"
 	"githhub.com/mcdexio/mai3-data/erc20"
 	"githhub.com/mcdexio/mai3-data/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
+	"log"
 	"net/http"
 )
 
@@ -39,12 +41,15 @@ func cmc(c *gin.Context) {
 }
 
 func main() {
+	// init config
+	if err := conf.Init(); err != nil {
+		log.Fatal("init config error, ", err)
+	}
 	router := gin.Default()
 	data := router.Group("/data")
 	data.GET("/cmc", cmc)
 
 	// By default it serves on :8080 unless a
 	// PORT environment variable was defined.
-	router.Run(":5001")
-
+	router.Run(conf.Conf.Port)
 }
