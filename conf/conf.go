@@ -10,5 +10,5 @@ var Conf Config
 
 // Init is parse config file
 func Init() (err error) {
-	return envconfig.Process("health", &Conf)
+	return envconfig.Process("mcdex", &Conf)
 }
