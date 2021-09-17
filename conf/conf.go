@@ -3,7 +3,8 @@ package conf
 import "github.com/kelseyhightower/envconfig"
 
 type Config struct {
-	Port string
+	Port     string `default:":5012"`
+	Provider string
 }
 
 var Conf Config

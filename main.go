@@ -19,7 +19,7 @@ func cmc(c *gin.Context) {
 
 	switch questParam {
 	case utils.TOTAL_SUPPLY:
-		client, err := ethclient.Dial(utils.PROVIDER)
+		client, err := ethclient.Dial(conf.Conf.Provider)
 		if err != nil {
 			c.String(http.StatusInternalServerError, SERVERBUSY)
 		}
