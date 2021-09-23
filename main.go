@@ -1,10 +1,11 @@
 package main
 
 import (
+	"githhub.com/mcdexio/mai3-data/api"
+	"githhub.com/mcdexio/mai3-data/common"
 	"githhub.com/mcdexio/mai3-data/conf"
 	"githhub.com/mcdexio/mai3-data/erc20"
-	"githhub.com/mcdexio/mai3-data/utils"
-	"github.com/ethereum/go-ethereum/common"
+	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -12,26 +13,24 @@ import (
 	"net/http"
 )
 
-const SERVERBUSY = "server is busy"
-
 func cmc(c *gin.Context) {
-	questParam := c.DefaultQuery("q", utils.TOTAL_SUPPLY)
+	questParam := c.DefaultQuery("q", common.TOTAL_SUPPLY)
 
 	switch questParam {
-	case utils.TOTAL_SUPPLY:
-		client, err := ethclient.Dial(conf.Conf.Provider)
+	case common.TOTAL_SUPPLY:
+		client, err := ethclient.Dial(conf.Conf.ProviderL1)
 		if err != nil {
-			c.String(http.StatusInternalServerError, SERVERBUSY)
+			c.String(http.StatusInternalServerError, common.SERVERBUSY)
 		}
 
-		tokenAddress := common.HexToAddress(utils.MCB_ADDRESS)
+		tokenAddress := eth_common.HexToAddress(common.MCB_ADDRESS)
 		instance, err := erc20.NewToken(tokenAddress, client)
 		if err != nil {
-			c.String(http.StatusInternalServerError, SERVERBUSY)
+			c.String(http.StatusInternalServerError, common.SERVERBUSY)
 		}
 		res, err := instance.TotalSupply(nil)
 		if err != nil {
-			c.String(http.StatusInternalServerError, SERVERBUSY)
+			c.String(http.StatusInternalServerError, common.SERVERBUSY)
 		}
 		totalSupply := decimal.NewFromBigInt(res, -18)
 		c.String(http.StatusOK, totalSupply.String())
@@ -41,6 +40,8 @@ func cmc(c *gin.Context) {
 }
 
 func main() {
+	// config decimal marshal json to number
+	decimal.MarshalJSONWithoutQuotes = true
 	// init config
 	if err := conf.Init(); err != nil {
 		log.Fatal("init config error, ", err)
@@ -48,6 +49,7 @@ func main() {
 	router := gin.Default()
 	data := router.Group("/data")
 	data.GET("/cmc", cmc)
+	data.GET("/contracts", api.Contracts)
 
 	// By default it serves on :8080 unless a
 	// PORT environment variable was defined.
