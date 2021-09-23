@@ -4,7 +4,8 @@ import (
 	"githhub.com/mcdexio/mai3-data/api"
 	"githhub.com/mcdexio/mai3-data/common"
 	"githhub.com/mcdexio/mai3-data/conf"
-	"githhub.com/mcdexio/mai3-data/erc20"
+	"githhub.com/mcdexio/mai3-data/ethereum"
+	"githhub.com/mcdexio/mai3-data/ethereum/erc20"
 	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,9 @@ func main() {
 	if err := conf.Init(); err != nil {
 		log.Fatal("init config error, ", err)
 	}
+	// init eth client
+	ethereum.NewEthClient()
+
 	router := gin.Default()
 	data := router.Group("/data")
 	data.GET("/cmc", cmc)

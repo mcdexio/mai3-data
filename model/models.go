@@ -8,7 +8,7 @@ type HttpResponse struct {
 }
 
 type Contract struct {
-	Index                    string          `json:"index"`
+	Index                    int64           `json:"index"`
 	TickerId                 string          `json:"ticker_id"`
 	BaseCurrency             string          `json:"base_currency"`
 	TargetCurrency           string          `json:"target_currency"`
@@ -27,6 +27,9 @@ type Contract struct {
 	FundingRate              decimal.Decimal `json:"funding_rate"`
 	NextFundingRate          decimal.Decimal `json:"next_funding_rate"`
 	NextFundingRateTimestamp int64           `json:"next_funding_rate_timestamp"`
+	ContractType             string          `json:"contract_type"`
+	ContractPrice            decimal.Decimal `json:"contract_price"`
+	ContractPriceCurrency    string          `json:"contract_price_currency"`
 }
 
 type DbTradeData struct {

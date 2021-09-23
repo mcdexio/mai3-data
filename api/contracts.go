@@ -5,28 +5,50 @@ import (
 	"fmt"
 	"githhub.com/mcdexio/mai3-data/common"
 	"githhub.com/mcdexio/mai3-data/conf"
+	"githhub.com/mcdexio/mai3-data/ethereum"
+	"githhub.com/mcdexio/mai3-data/mai3"
 	"githhub.com/mcdexio/mai3-data/model"
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
 
-func Contracts(c *gin.Context) {
-	var responsePerpetuals common.ResponsePerpetuals
+func queryGraph() *common.ResponsePerpetuals {
+	var responsePerpetuals *common.ResponsePerpetuals
 	params := common.GraphQuery{
 		Query: fmt.Sprintf(common.QueryPerpetuals, conf.Conf.PoolAddr),
 	}
 	err, code, res := common.HttpCli.Post(conf.Conf.SubGraphURL, nil, params, nil)
 	if err != nil || code != 200 {
-		c.JSON(http.StatusOK, model.HttpResponse{
-			Code: -1,
-		})
-		return
+		return nil
 	}
 	err = json.Unmarshal(res, &responsePerpetuals)
 	if err != nil {
+		return nil
+	}
+	return responsePerpetuals
+}
+
+func Contracts(c *gin.Context) {
+	var responsePerpetuals *common.ResponsePerpetuals
+	var liquidityPoolStorage *model.LiquidityPoolStorage
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		responsePerpetuals = queryGraph()
+		wg.Done()
+	}()
+	go func() {
+		liquidityPoolStorage = ethereum.Client.GetLiquidityPoolStorage()
+		wg.Done()
+	}()
+	wg.Wait()
+
+	if responsePerpetuals == nil || liquidityPoolStorage == nil {
 		c.JSON(http.StatusOK, model.HttpResponse{
 			Code: -1,
 		})
@@ -35,8 +57,9 @@ func Contracts(c *gin.Context) {
 
 	var result []*model.Contract
 	for _, perp := range responsePerpetuals.Data.Perpetuals {
+		index, _ := strconv.ParseInt(perp.Index, 10, 64)
 		contract := &model.Contract{
-			Index:          perp.Index,
+			Index:          index,
 			BaseCurrency:   perp.Underlying,
 			TargetCurrency: perp.CollateralName,
 			TickerId:       fmt.Sprintf("%s-%s", perp.Underlying, perp.CollateralName),
@@ -47,15 +70,15 @@ func Contracts(c *gin.Context) {
 		result = append(result, contract)
 	}
 
-	var wg sync.WaitGroup
+	var wg2 sync.WaitGroup
 	for _, contract := range result {
-		wg.Add(1)
-		go func(contract *model.Contract) {
-			FillContract(contract)
-			wg.Done()
-		}(contract)
+		wg2.Add(1)
+		go func(contract *model.Contract, liquidityPoolStorage *model.LiquidityPoolStorage) {
+			FillContract(contract, liquidityPoolStorage)
+			wg2.Done()
+		}(contract, liquidityPoolStorage)
 	}
-	wg.Wait()
+	wg2.Wait()
 
 	c.JSON(http.StatusOK, model.HttpResponse{
 		Code: 0,
@@ -63,13 +86,29 @@ func Contracts(c *gin.Context) {
 	})
 }
 
-func FillContract(contract *model.Contract) *model.Contract {
+func FillContract(contract *model.Contract, liquidityPoolStorage *model.LiquidityPoolStorage) *model.Contract {
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	go func(contract *model.Contract) {
 		getDataFromDb(contract)
 		wg.Done()
 	}(contract)
+	go func() {
+		perpetual := liquidityPoolStorage.Perpetuals[contract.Index]
+		contract.IndexPrice = perpetual.IndexPrice
+		contract.IndexName = perpetual.UnderlyingAsset
+		contract.IndexCurrency = contract.TargetCurrency
+		contract.Bid = mai3.ComputeBestAskBidPrice(liquidityPoolStorage, contract.Index, true)
+		contract.Ask = mai3.ComputeBestAskBidPrice(liquidityPoolStorage, contract.Index, false)
+		if perpetual.IsInversePerpetual {
+			contract.ContractType = "Inverse"
+		} else {
+			contract.ContractType = "Vanilla"
+		}
+		contract.ContractPrice = contract.IndexPrice
+		contract.ContractPriceCurrency = contract.IndexCurrency
+		wg.Done()
+	}()
 	wg.Wait()
 	return contract
 }
