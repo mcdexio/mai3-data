@@ -100,3 +100,9 @@ type AMMTradingContext struct {
 	SquareValueWithoutCurrent    decimal.Decimal
 	PositionMarginWithoutCurrent decimal.Decimal
 }
+
+type AMMDepthData struct {
+	Price  decimal.Decimal `json:"price"`
+	Amount decimal.Decimal `json:"amount"`
+	// Total  decimal.Decimal
+}

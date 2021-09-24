@@ -764,3 +764,66 @@ func initAMMTradingContextEagerEvaluation(context *model.AMMTradingContext) erro
 	context.PositionMarginWithoutCurrent = positionMarginWithoutCurrent
 	return nil
 }
+
+func GetAMMDepth(p *model.LiquidityPoolStorage, perpetualIndex int64, isInverse, isTraderBuy bool,
+	groupSize decimal.Decimal, count int) []*model.AMMDepthData {
+	ret := make([]*model.AMMDepthData, 0)
+	if !isTraderBuy {
+		groupSize = groupSize.Neg() // human perspective
+	}
+	// get order side (in contract perspective)
+	isTraderBuyInContract := isTraderBuy
+	if isInverse {
+		isTraderBuyInContract = !isTraderBuyInContract
+	}
+
+	// get the best ask/bid price
+	price := ComputeBestAskBidPrice(p, perpetualIndex, !isTraderBuyInContract) // (in contract perspective)
+	if price.IsZero() {
+		return ret
+	}
+	if isInverse {
+		price = _1.Div(price) // (in human perspective)
+	}
+	price = alignPriceToGroup(price, groupSize, isTraderBuy) // (in human perspective)
+	// for each price levels (in human perspective)
+	previousTotal := _0
+	isFirst := true
+
+	for ; len(ret) < count; price = price.Add(groupSize) {
+		if price.LessThan(_0) {
+			break
+		}
+		// limitPrice (in contract perspective)
+		limitPrice := price // (in human perspective)
+		if isInverse {
+			limitPrice = _1.Div(limitPrice)
+		}
+		// amount
+		total := ComputeAMMAmountWithPrice(p, perpetualIndex, isTraderBuyInContract, limitPrice)
+		amount := total.Sub(previousTotal)
+		if amount.IsZero() {
+			if !isFirst {
+				break
+			}
+		} else {
+			data := &model.AMMDepthData{
+				Price:  price,
+				Amount: amount.Abs().Truncate(4),
+				// Total:  total.Abs(),
+			}
+			ret = append(ret, data)
+			previousTotal = total
+		}
+		isFirst = false
+	}
+	return ret
+}
+
+func alignPriceToGroup(price, groupSize decimal.Decimal, isTraderBuy bool) decimal.Decimal {
+	if isTraderBuy {
+		return Round2Zero(price.Div(groupSize), ROUND_UP).Mul(groupSize)
+	} else {
+		return Round2Zero(price.Div(groupSize), ROUND_DOWN).Mul(groupSize)
+	}
+}

@@ -3,13 +3,14 @@ package conf
 import "github.com/kelseyhightower/envconfig"
 
 type Config struct {
-	Port         string `default:":5012"`
-	ProviderL1   string
-	ProviderArb1 string
-	DbConnStr    string
-	SubGraphURL  string
-	PoolAddr     string
-	ReaderAddr   string
+	Port           string `default:":5012"`
+	ProviderL1     string
+	ProviderArb1   string
+	DbConnStr      string
+	SubGraphURL    string
+	PoolAddr       string
+	PoolCollateral string
+	ReaderAddr     string
 }
 
 var Conf Config

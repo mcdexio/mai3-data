@@ -18,6 +18,32 @@ func init() {
 	decimal.DivisionPrecision = DECIMALS
 }
 
+type RoundMode int32
+
+const (
+	ROUND_UP RoundMode = iota
+	ROUND_DOWN
+)
+
+func Round2Zero(num decimal.Decimal, mode RoundMode) decimal.Decimal {
+	switch mode {
+	case ROUND_UP:
+		if num.IsPositive() {
+			return num.Ceil()
+		} else {
+			return num.Floor()
+		}
+	case ROUND_DOWN:
+		if num.IsPositive() {
+			return num.Floor()
+		} else {
+			return num.Ceil()
+		}
+	default:
+		return num
+	}
+}
+
 // Sqrt returns the square root of d, accurate to DivisionPrecision decimal places.
 func Sqrt(d decimal.Decimal) decimal.Decimal {
 	one := decimal.NewFromFloat(1)
@@ -50,8 +76,8 @@ func Sqrt(d decimal.Decimal) decimal.Decimal {
 
 var (
 	sqrt5   = math.Sqrt(5)
-	invphi  = (sqrt5 - 1) / 2 //# 1/phi
-	invphi2 = (3 - sqrt5) / 2 //# 1/phi^2
+	invphi  = (sqrt5 - 1) / 2 // # 1/phi
+	invphi2 = (3 - sqrt5) / 2 // # 1/phi^2
 	nan     = math.NaN()
 )
 
