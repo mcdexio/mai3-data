@@ -55,6 +55,7 @@ func (client *EthClient) GetLiquidityPoolStorage() *model.LiquidityPoolStorage {
 		storage := &model.PerpetualStorage{
 			MarkPrice:               decimal.NewFromBigInt(perpetual.Nums[1], -mai3.DECIMALS),
 			IndexPrice:              decimal.NewFromBigInt(perpetual.Nums[2], -mai3.DECIMALS),
+			FundingRate:             decimal.NewFromBigInt(perpetual.Nums[3], -mai3.DECIMALS),
 			UnitAccumulativeFunding: decimal.NewFromBigInt(perpetual.Nums[4], -mai3.DECIMALS),
 			InitialMarginRate:       decimal.NewFromBigInt(perpetual.Nums[5], -mai3.DECIMALS),
 			MaintenanceMarginRate:   decimal.NewFromBigInt(perpetual.Nums[6], -mai3.DECIMALS),

@@ -98,6 +98,7 @@ func FillContract(contract *model.Contract, liquidityPoolStorage *model.Liquidit
 		contract.IndexPrice = perpetual.IndexPrice
 		contract.IndexName = perpetual.UnderlyingAsset
 		contract.IndexCurrency = contract.TargetCurrency
+		contract.FundingRate = perpetual.FundingRate
 		contract.Bid = mai3.ComputeBestAskBidPrice(liquidityPoolStorage, contract.Index, true)
 		contract.Ask = mai3.ComputeBestAskBidPrice(liquidityPoolStorage, contract.Index, false)
 		if perpetual.IsInversePerpetual {

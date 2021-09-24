@@ -18,6 +18,7 @@ type PerpetualStorage struct {
 
 	MarkPrice               decimal.Decimal
 	IndexPrice              decimal.Decimal
+	FundingRate             decimal.Decimal
 	UnitAccumulativeFunding decimal.Decimal
 
 	InitialMarginRate      decimal.Decimal
