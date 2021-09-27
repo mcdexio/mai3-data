@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"githhub.com/mcdexio/mai3-data/conf"
 	"githhub.com/mcdexio/mai3-data/ethereum/reader"
 	"githhub.com/mcdexio/mai3-data/mai3"
 	"githhub.com/mcdexio/mai3-data/model"
@@ -13,29 +12,34 @@ import (
 	"log"
 )
 
-type EthClient struct {
-	ethCli *ethclient.Client
+type Client struct {
+	ethCli     *ethclient.Client
+	readerAddr string
+	poolAddr   string
 }
 
-var Client EthClient
-
-func NewEthClient() {
+func NewClient(provider, readerAddr, poolAddr string) *Client {
 	var err error
-	ethCli, err := ethclient.Dial(conf.Conf.ProviderArb1)
+	ethCli, err := ethclient.Dial(provider)
 	if err != nil {
 		log.Fatal("eth client dial error", err)
 	}
-	Client = EthClient{ethCli}
+	client := &Client{
+		ethCli:     ethCli,
+		readerAddr: readerAddr,
+		poolAddr:   poolAddr,
+	}
+	return client
 }
 
-func (client *EthClient) GetLiquidityPoolStorage() *model.LiquidityPoolStorage {
-	address := ethCommon.HexToAddress(conf.Conf.ReaderAddr)
+func (client *Client) GetLiquidityPoolStorage() *model.LiquidityPoolStorage {
+	address := ethCommon.HexToAddress(client.readerAddr)
 	contract, err := reader.NewReader(address, client.ethCli)
 	if err != nil {
 		return nil
 	}
 
-	liquidityPool := ethCommon.HexToAddress(conf.Conf.PoolAddr)
+	liquidityPool := ethCommon.HexToAddress(client.poolAddr)
 	opts := &ethBind.CallOpts{
 		Context: context.Background(),
 	}

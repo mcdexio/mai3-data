@@ -34,9 +34,9 @@ func NewDbMaster() *gorm.DB {
 
 	instance.SingularTable(true)
 
-	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-		return "t_" + defaultTableName
-	}
+	// gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
+	// 	return "t_" + defaultTableName
+	// }
 
 	masterInstance = instance
 
