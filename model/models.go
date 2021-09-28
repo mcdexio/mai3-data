@@ -26,15 +26,16 @@ type Contract struct {
 	IndexCurrency  string          `json:"index_currency"`
 	FundingRate    decimal.Decimal `json:"funding_rate"`
 	// NextFundingRate          decimal.Decimal `json:"next_funding_rate"`
-	// NextFundingRateTimestamp int64           `json:"next_funding_rate_timestamp"`
-	ContractType          string          `json:"contract_type"`
-	ContractPrice         decimal.Decimal `json:"contract_price"`
-	ContractPriceCurrency string          `json:"contract_price_currency"`
+	NextFundingRateTimestamp int64           `json:"next_funding_rate_timestamp"`
+	ContractType             string          `json:"contract_type"`
+	ContractPrice            decimal.Decimal `json:"contract_price"`
+	ContractPriceCurrency    string          `json:"contract_price_currency"`
 }
 
 type OrderBook struct {
-	Bids []*AMMDepthData `json:"bids"`
-	Asks []*AMMDepthData `json:"asks"`
+	Timestamp int64           `json:"timestamp"`
+	Bids      []*AMMDepthData `json:"bids"`
+	Asks      []*AMMDepthData `json:"asks"`
 }
 
 type DbTradeData struct {

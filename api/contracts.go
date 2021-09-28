@@ -33,8 +33,8 @@ func queryGraph(graphURL, poolAddr string) *common.ResponsePerpetuals {
 }
 
 func Contracts(c *gin.Context) {
-	var perpetualsArb, perpetualsBsd *common.ResponsePerpetuals
-	var liquidityPoolArb, liquidityPoolBsd *model.LiquidityPoolStorage
+	var perpetualsArb, perpetualsBsc *common.ResponsePerpetuals
+	var liquidityPoolArb, liquidityPoolBsc *model.LiquidityPoolStorage
 
 	var wg sync.WaitGroup
 	wg.Add(4)
@@ -50,17 +50,17 @@ func Contracts(c *gin.Context) {
 	}()
 	// bsc network
 	go func() {
-		perpetualsBsd = queryGraph(conf.Conf.SubGraphUrlBsc, conf.Conf.PoolAddrBsc)
+		perpetualsBsc = queryGraph(conf.Conf.SubGraphUrlBsc, conf.Conf.PoolAddrBsc)
 		wg.Done()
 	}()
 	go func() {
 		client := ethereum.NewClient(conf.Conf.ProviderBsc, conf.Conf.ReaderAddrBsc, conf.Conf.PoolAddrBsc)
-		liquidityPoolBsd = client.GetLiquidityPoolStorage()
+		liquidityPoolBsc = client.GetLiquidityPoolStorage()
 		wg.Done()
 	}()
 	wg.Wait()
 
-	if perpetualsArb == nil || perpetualsBsd == nil || liquidityPoolArb == nil || liquidityPoolBsd == nil {
+	if perpetualsArb == nil || perpetualsBsc == nil || liquidityPoolArb == nil || liquidityPoolBsc == nil {
 		c.JSON(http.StatusOK, model.HttpResponse{
 			Code: -1,
 		})
@@ -75,7 +75,7 @@ func Contracts(c *gin.Context) {
 		wg2.Done()
 	}()
 	go func() {
-		resultBsc = buildContractList(perpetualsBsd, liquidityPoolBsd)
+		resultBsc = buildContractList(perpetualsBsc, liquidityPoolBsc)
 		wg2.Done()
 	}()
 	wg2.Wait()
@@ -128,6 +128,7 @@ func fillContract(contract *model.Contract, liquidityPoolStorage *model.Liquidit
 		contract.IndexName = perpetual.UnderlyingAsset
 		contract.IndexCurrency = contract.TargetCurrency
 		contract.FundingRate = perpetual.FundingRate
+		contract.NextFundingRateTimestamp = time.Now().Add(time.Second).Unix()
 		contract.Bid = mai3.ComputeBestAskBidPrice(liquidityPoolStorage, contract.Index, true)
 		contract.Ask = mai3.ComputeBestAskBidPrice(liquidityPoolStorage, contract.Index, false)
 		if perpetual.IsInversePerpetual {

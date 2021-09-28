@@ -11,6 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func GetOrderBook(client *ethereum.Client, UnderlyingAsset string) ([]*model.AMMDepthData, []*model.AMMDepthData, error) {
@@ -70,8 +71,9 @@ func OrderBook(c *gin.Context) {
 	c.JSON(http.StatusOK, model.HttpResponse{
 		Code: 0,
 		Data: model.OrderBook{
-			Bids: bids,
-			Asks: asks,
+			Timestamp: time.Now().Unix(),
+			Bids:      bids,
+			Asks:      asks,
 		},
 	})
 }
