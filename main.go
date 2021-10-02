@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
 	"githhub.com/mcdexio/mai3-data/api"
 	"githhub.com/mcdexio/mai3-data/common"
 	"githhub.com/mcdexio/mai3-data/conf"
@@ -9,8 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
-	"log"
-	"net/http"
 )
 
 func cmc(c *gin.Context) {
@@ -51,7 +52,7 @@ func main() {
 	data := router.Group("/data")
 	data.GET("/cmc", cmc)
 	data.GET("/contracts", api.Contracts)
-	data.GET("/orderbook/:ticker_id", api.OrderBook)
+	data.GET("/orderbook/:chain/:pool_addr/:perp_index", api.OrderBook)
 
 	// By default it serves on :8080 unless a
 	// PORT environment variable was defined.

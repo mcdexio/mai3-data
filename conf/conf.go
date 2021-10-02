@@ -10,8 +10,8 @@ type Config struct {
 	ProviderBsc     string
 	SubGraphUrlArb1 string
 	SubGraphUrlBsc  string
-	PoolAddrArb1    string
-	PoolAddrBsc     string
+	PoolAddrArb1    []string
+	PoolAddrBsc     []string
 	ReaderAddrArb1  string
 	ReaderAddrBsc   string
 }

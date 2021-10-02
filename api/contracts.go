@@ -3,6 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"githhub.com/mcdexio/mai3-data/common"
 	"githhub.com/mcdexio/mai3-data/conf"
 	"githhub.com/mcdexio/mai3-data/ethereum"
@@ -10,16 +16,15 @@ import (
 	"githhub.com/mcdexio/mai3-data/model"
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
-	"sync"
-	"time"
 )
 
-func queryGraph(graphURL, poolAddr string) *common.ResponsePerpetuals {
+const BSC = "bsc"
+const ARB = "arb"
+
+func queryGraph(graphURL string, poolAddres []string) *common.ResponsePerpetuals {
 	var responsePerpetuals *common.ResponsePerpetuals
 	params := common.GraphQuery{
-		Query: fmt.Sprintf(common.QueryPerpetuals, poolAddr),
+		Query: fmt.Sprintf(common.QueryPerpetuals, strings.Join(poolAddres, "\",\"")),
 	}
 	err, code, res := common.HttpCli.Post(graphURL, nil, params, nil)
 	if err != nil || code != 200 {
@@ -34,7 +39,7 @@ func queryGraph(graphURL, poolAddr string) *common.ResponsePerpetuals {
 
 func Contracts(c *gin.Context) {
 	var perpetualsArb, perpetualsBsc *common.ResponsePerpetuals
-	var liquidityPoolArb, liquidityPoolBsc *model.LiquidityPoolStorage
+	var liquidityPoolArb, liquidityPoolBsc map[string]*model.LiquidityPoolStorage
 
 	var wg sync.WaitGroup
 	wg.Add(4)
@@ -71,11 +76,11 @@ func Contracts(c *gin.Context) {
 	wg2.Add(2)
 	var resultArb, resultBsc []*model.Contract
 	go func() {
-		resultArb = buildContractList(perpetualsArb, liquidityPoolArb)
+		resultArb = buildContractList(ARB, perpetualsArb, liquidityPoolArb)
 		wg2.Done()
 	}()
 	go func() {
-		resultBsc = buildContractList(perpetualsBsc, liquidityPoolBsc)
+		resultBsc = buildContractList(BSC, perpetualsBsc, liquidityPoolBsc)
 		wg2.Done()
 	}()
 	wg2.Wait()
@@ -87,11 +92,12 @@ func Contracts(c *gin.Context) {
 	})
 }
 
-func buildContractList(responsePerpetuals *common.ResponsePerpetuals, liquidityPoolStorage *model.LiquidityPoolStorage) []*model.Contract {
+func buildContractList(chainType string, responsePerpetuals *common.ResponsePerpetuals, liquidityPoolStorage map[string]*model.LiquidityPoolStorage) []*model.Contract {
 	var result []*model.Contract
 	for _, perp := range responsePerpetuals.Data.Perpetuals {
 		index, _ := strconv.ParseInt(perp.Index, 10, 64)
 		contract := &model.Contract{
+			PoolAddr:       strings.Split(perp.Id, "-")[0],
 			Index:          index,
 			BaseCurrency:   perp.Underlying,
 			TargetCurrency: perp.CollateralName,
@@ -106,22 +112,22 @@ func buildContractList(responsePerpetuals *common.ResponsePerpetuals, liquidityP
 	var wg sync.WaitGroup
 	for _, contract := range result {
 		wg.Add(1)
-		go func(contract *model.Contract, liquidityPoolStorage *model.LiquidityPoolStorage) {
-			fillContract(contract, liquidityPoolStorage)
+		go func(chainType string, contract *model.Contract, liquidityPoolStorage *model.LiquidityPoolStorage) {
+			fillContract(chainType, contract, liquidityPoolStorage)
 			wg.Done()
-		}(contract, liquidityPoolStorage)
+		}(chainType, contract, liquidityPoolStorage[contract.PoolAddr])
 	}
 	wg.Wait()
 	return result
 }
 
-func fillContract(contract *model.Contract, liquidityPoolStorage *model.LiquidityPoolStorage) {
+func fillContract(chainType string, contract *model.Contract, liquidityPoolStorage *model.LiquidityPoolStorage) {
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go func(contract *model.Contract) {
-		getTradeDataFromDb(contract)
+	go func(chainType string, contract *model.Contract) {
+		getTradeDataFromDb(chainType, contract)
 		wg.Done()
-	}(contract)
+	}(chainType, contract)
 	go func() {
 		perpetual := liquidityPoolStorage.Perpetuals[contract.Index]
 		contract.IndexPrice = perpetual.IndexPrice
@@ -143,17 +149,15 @@ func fillContract(contract *model.Contract, liquidityPoolStorage *model.Liquidit
 	wg.Wait()
 }
 
-func getTradeDataFromDb(contract *model.Contract) {
+func getTradeDataFromDb(chainType string, contract *model.Contract) {
 	db := common.DbInstance()
 	var tradeData model.DbTradeData
-	var tableName, poolAddr string
-	switch contract.TargetCurrency {
-	case common.CollateralUSDC:
+	var tableName string
+	switch chainType {
+	case ARB:
 		tableName = "arb_trade"
-		poolAddr = conf.Conf.PoolAddrArb1
-	case common.CollateralBUSD:
+	case BSC:
 		tableName = "bsc_trade"
-		poolAddr = conf.Conf.PoolAddrBsc
 	default:
 		return
 	}
@@ -162,7 +166,7 @@ func getTradeDataFromDb(contract *model.Contract) {
 		Select("sum(abs(position)) as base_volume,sum(abs(position)*price) as target_volume,"+
 			"max(price) as high,min(price) as low").
 		Where("timestamp>? and pool_address=? and perpetual_index=?", lastDay,
-			poolAddr, contract.Index).Scan(&tradeData).Error
+			contract.PoolAddr, contract.Index).Scan(&tradeData).Error
 	if err != nil {
 		logger.Warn("query pgsql error", err)
 		return

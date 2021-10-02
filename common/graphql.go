@@ -7,7 +7,7 @@ type GraphQuery struct {
 }
 
 var QueryPerpetuals = `{
-  perpetuals(where: {liquidityPool: "%v"}) {
+  perpetuals(where: {liquidityPool_in: ["%v"]}) {
     id
 	index
     underlying

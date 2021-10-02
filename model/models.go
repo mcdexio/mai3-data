@@ -8,6 +8,7 @@ type HttpResponse struct {
 }
 
 type Contract struct {
+	PoolAddr       string          `json:"pool_addr"`
 	Index          int64           `json:"index"`
 	TickerId       string          `json:"ticker_id"`
 	BaseCurrency   string          `json:"base_currency"`
