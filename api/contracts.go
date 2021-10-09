@@ -15,6 +15,7 @@ import (
 	"githhub.com/mcdexio/mai3-data/mai3"
 	"githhub.com/mcdexio/mai3-data/model"
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	logger "github.com/sirupsen/logrus"
 )
 
@@ -86,6 +87,24 @@ func Contracts(c *gin.Context) {
 	wg2.Wait()
 
 	result := append(resultArb, resultBsc...)
+	newResult := make([]*model.Contract, 0)
+	// modify contract which is inverse
+	for _, contract := range result {
+		if contract.ContractType == "Inverse" {
+			contract.BaseCurrency, contract.TargetCurrency = contract.TargetCurrency, contract.BaseCurrency
+			contract.IndexCurrency = contract.TargetCurrency
+			contract.ContractPriceCurrency = contract.IndexCurrency
+			contract.LastPrice = decimal.NewFromInt(1).Div(contract.LastPrice)
+			contract.Bid = decimal.NewFromInt(1).Div(contract.Bid)
+			contract.Ask = decimal.NewFromInt(1).Div(contract.Ask)
+			contract.High = decimal.NewFromInt(1).Div(contract.High)
+			contract.Low = decimal.NewFromInt(1).Div(contract.Low)
+			contract.IndexPrice = decimal.NewFromInt(1).Div(contract.IndexPrice)
+			contract.ContractPrice = decimal.NewFromInt(1).Div(contract.ContractPrice)
+			contract.OpenInterest = contract.OpenInterest.Div(contract.LastPrice)
+		}
+		newResult = append(newResult, contract)
+	}
 	c.JSON(http.StatusOK, model.HttpResponse{
 		Code: 0,
 		Data: result,
