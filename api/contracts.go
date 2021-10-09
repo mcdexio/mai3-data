@@ -107,7 +107,7 @@ func Contracts(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, model.HttpResponse{
 		Code: 0,
-		Data: result,
+		Data: newResult,
 	})
 }
 
