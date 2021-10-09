@@ -92,6 +92,7 @@ func Contracts(c *gin.Context) {
 	for _, contract := range result {
 		if contract.ContractType == "Inverse" {
 			contract.BaseCurrency, contract.TargetCurrency = contract.TargetCurrency, contract.BaseCurrency
+			contract.BaseVolume, contract.TargetVolume = contract.TargetVolume, contract.BaseVolume
 			contract.IndexCurrency = contract.TargetCurrency
 			contract.ContractPriceCurrency = contract.IndexCurrency
 			contract.LastPrice = decimal.NewFromInt(1).Div(contract.LastPrice)
