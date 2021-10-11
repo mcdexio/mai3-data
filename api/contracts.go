@@ -95,13 +95,28 @@ func Contracts(c *gin.Context) {
 			contract.BaseVolume, contract.TargetVolume = contract.TargetVolume, contract.BaseVolume
 			contract.IndexCurrency = contract.TargetCurrency
 			contract.ContractPriceCurrency = contract.IndexCurrency
-			contract.LastPrice = decimal.NewFromInt(1).Div(contract.LastPrice)
+			if !contract.LastPrice.IsZero() {
+				contract.LastPrice = decimal.NewFromInt(1).Div(contract.LastPrice)
+			}
+			if !contract.Bid.IsZero() {
+				contract.Bid = decimal.NewFromInt(1).Div(contract.Bid)
+			}
 			contract.Bid = decimal.NewFromInt(1).Div(contract.Bid)
-			contract.Ask = decimal.NewFromInt(1).Div(contract.Ask)
-			contract.High = decimal.NewFromInt(1).Div(contract.High)
-			contract.Low = decimal.NewFromInt(1).Div(contract.Low)
-			contract.IndexPrice = decimal.NewFromInt(1).Div(contract.IndexPrice)
-			contract.ContractPrice = decimal.NewFromInt(1).Div(contract.ContractPrice)
+			if !contract.Ask.IsZero() {
+				contract.Ask = decimal.NewFromInt(1).Div(contract.Ask)
+			}
+			if !contract.High.IsZero() {
+				contract.High = decimal.NewFromInt(1).Div(contract.High)
+			}
+			if !contract.Low.IsZero() {
+				contract.Low = decimal.NewFromInt(1).Div(contract.Low)
+			}
+			if !contract.IndexPrice.IsZero() {
+				contract.IndexPrice = decimal.NewFromInt(1).Div(contract.IndexPrice)
+			}
+			if !contract.ContractPrice.IsZero() {
+				contract.ContractPrice = decimal.NewFromInt(1).Div(contract.ContractPrice)
+			}
 			contract.OpenInterest = contract.OpenInterest.Div(contract.LastPrice)
 		}
 		newResult = append(newResult, contract)
