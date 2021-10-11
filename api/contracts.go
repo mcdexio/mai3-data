@@ -101,7 +101,6 @@ func Contracts(c *gin.Context) {
 			if !contract.Bid.IsZero() {
 				contract.Bid = decimal.NewFromInt(1).Div(contract.Bid)
 			}
-			contract.Bid = decimal.NewFromInt(1).Div(contract.Bid)
 			if !contract.Ask.IsZero() {
 				contract.Ask = decimal.NewFromInt(1).Div(contract.Ask)
 			}
