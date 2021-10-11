@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 
 	"githhub.com/mcdexio/mai3-data/conf"
@@ -13,6 +12,36 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 )
+
+var TickerPoolAddrMap = map[string]string{
+	"ETH-USDC": "0xab324146c49b23658e5b3930e641bdbdf089cbac",
+	"BTC-USDC": "0xab324146c49b23658e5b3930e641bdbdf089cbac",
+	"BTC-BUSD": "0xdb282bbace4e375ff2901b84aceb33016d0d663d",
+	"ETH-BUSD": "0xdb282bbace4e375ff2901b84aceb33016d0d663d",
+	"BNB-BUSD": "0xdb282bbace4e375ff2901b84aceb33016d0d663d",
+	"USD-ETH":  "0xf6b2d76c248af20009188139660a516e5c4e0532",
+	"USD-BTCB": "0x2ea001032b0eb424120b4dec51bf02db0df46c78",
+}
+
+var TickerChainTypeMap = map[string]string{
+	"ETH-USDC": ARB,
+	"BTC-USDC": ARB,
+	"BTC-BUSD": BSC,
+	"ETH-BUSD": BSC,
+	"BNB-BUSD": BSC,
+	"USD-ETH":  BSC,
+	"USD-BTCB": BSC,
+}
+
+var TickerPerpIndexMap = map[string]int64{
+	"ETH-USDC": 0,
+	"BTC-USDC": 1,
+	"BTC-BUSD": 0,
+	"ETH-BUSD": 1,
+	"BNB-BUSD": 2,
+	"USD-ETH":  0,
+	"USD-BTCB": 1,
+}
 
 func GetOrderBook(client *ethereum.Client, poolAddr string, perpIndx int64) ([]*model.AMMDepthData, []*model.AMMDepthData, error) {
 	liquidityPoolStorageMap := client.GetLiquidityPoolStorage()
@@ -35,24 +64,32 @@ func GetOrderBook(client *ethereum.Client, poolAddr string, perpIndx int64) ([]*
 }
 
 func OrderBook(c *gin.Context) {
-	chainType := c.Param("chain")
-	poolAddr := c.Param("pool_addr")
-	perpIndex, err := strconv.ParseInt(c.Param("perp_index"), 10, 64)
-	if err != nil {
+	tickerID := c.Param("ticker_id")
+	poolAddr, ok := TickerPoolAddrMap[tickerID]
+	if !ok {
 		c.JSON(http.StatusOK, model.HttpResponse{
 			Code: -1,
 		})
 		return
 	}
-
-	if chainType != BSC && chainType != ARB {
+	perpIndex, ok := TickerPerpIndexMap[tickerID]
+	if !ok {
 		c.JSON(http.StatusOK, model.HttpResponse{
-			Code: -1,
+			Code: -2,
+		})
+		return
+	}
+
+	chainType, ok := TickerChainTypeMap[tickerID]
+	if !ok {
+		c.JSON(http.StatusOK, model.HttpResponse{
+			Code: -3,
 		})
 		return
 	}
 
 	var bids, asks []*model.AMMDepthData
+	var err error
 	var client *ethereum.Client
 	switch chainType {
 	case ARB:
@@ -61,7 +98,7 @@ func OrderBook(c *gin.Context) {
 		client = ethereum.NewClient(conf.Conf.ProviderBsc, conf.Conf.ReaderAddrBsc, conf.Conf.PoolAddrBsc)
 	default:
 		c.JSON(http.StatusOK, model.HttpResponse{
-			Code: -1,
+			Code: -4,
 		})
 		return
 	}
