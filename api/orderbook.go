@@ -20,6 +20,7 @@ var TickerPoolAddrMap = map[string]string{
 	"ETH-BUSD": "0xdb282bbace4e375ff2901b84aceb33016d0d663d",
 	"BNB-BUSD": "0xdb282bbace4e375ff2901b84aceb33016d0d663d",
 	"USD-ETH":  "0xf6b2d76c248af20009188139660a516e5c4e0532",
+	"BTC-ETH":  "0xf6b2d76c248af20009188139660a516e5c4e0532",
 	"USD-BTCB": "0x2ea001032b0eb424120b4dec51bf02db0df46c78",
 }
 
@@ -30,6 +31,7 @@ var TickerChainTypeMap = map[string]string{
 	"ETH-BUSD": BSC,
 	"BNB-BUSD": BSC,
 	"USD-ETH":  BSC,
+	"BTC-ETH":  BSC,
 	"USD-BTCB": BSC,
 }
 
@@ -40,6 +42,7 @@ var TickerPerpIndexMap = map[string]int64{
 	"ETH-BUSD": 1,
 	"BNB-BUSD": 2,
 	"USD-ETH":  0,
+	"BTC-ETH":  0,
 	"USD-BTCB": 1,
 }
 

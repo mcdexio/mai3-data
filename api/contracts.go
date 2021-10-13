@@ -22,6 +22,9 @@ import (
 const BSC = "bsc"
 const ARB = "arb"
 
+const EthUsdcPerpetual = "0xdb282bbace4e375ff2901b84aceb33016d0d663d-1"
+const BtcEthPerpetual = "0xf6b2d76c248af20009188139660a516e5c4e0532-1"
+
 func queryGraph(graphURL string, poolAddres []string) *common.ResponsePerpetuals {
 	var responsePerpetuals *common.ResponsePerpetuals
 	params := common.GraphQuery{
@@ -88,6 +91,7 @@ func Contracts(c *gin.Context) {
 
 	result := append(resultArb, resultBsc...)
 	newResult := make([]*model.Contract, 0)
+	ethPrice := decimal.Zero
 	// modify contract which is inverse
 	for _, contract := range result {
 		if contract.ContractType == "Inverse" {
@@ -117,6 +121,19 @@ func Contracts(c *gin.Context) {
 				contract.ContractPrice = decimal.NewFromInt(1).Div(contract.ContractPrice)
 			}
 			contract.OpenInterest = contract.OpenInterest.Div(contract.LastPrice)
+		}
+		perpetual := fmt.Sprintf("%s-%d", contract.PoolAddr, contract.Index)
+		if perpetual == EthUsdcPerpetual {
+			ethPrice = contract.LastPrice
+		} else if perpetual == BtcEthPerpetual {
+			contract.LastPrice = contract.LastPrice.Mul(ethPrice)
+			contract.Bid = contract.Bid.Mul(ethPrice)
+			contract.Ask = contract.Ask.Mul(ethPrice)
+			contract.High = contract.High.Mul(ethPrice)
+			contract.Low = contract.Low.Mul(ethPrice)
+			contract.IndexPrice = contract.IndexPrice.Mul(ethPrice)
+			contract.ContractPrice = contract.ContractPrice.Mul(ethPrice)
+			contract.TargetVolume = contract.TargetVolume.Mul(ethPrice)
 		}
 		newResult = append(newResult, contract)
 	}
