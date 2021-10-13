@@ -122,6 +122,8 @@ func Contracts(c *gin.Context) {
 			}
 			contract.OpenInterest = contract.OpenInterest.Div(contract.LastPrice)
 		}
+
+		// for BTC-ETH perpetual
 		perpetual := fmt.Sprintf("%s-%d", contract.PoolAddr, contract.Index)
 		if perpetual == EthUsdcPerpetual {
 			ethPrice = contract.LastPrice
@@ -134,7 +136,11 @@ func Contracts(c *gin.Context) {
 			contract.IndexPrice = contract.IndexPrice.Mul(ethPrice)
 			contract.ContractPrice = contract.ContractPrice.Mul(ethPrice)
 			contract.TargetVolume = contract.TargetVolume.Mul(ethPrice)
+			contract.TargetCurrency = "USD"
+			contract.IndexCurrency = "USD"
+			contract.ContractPriceCurrency = "USD"
 		}
+
 		newResult = append(newResult, contract)
 	}
 	c.JSON(http.StatusOK, model.HttpResponse{
