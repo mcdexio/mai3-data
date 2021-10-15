@@ -20,7 +20,7 @@ import (
 )
 
 const BSC = "bsc"
-const ARB = "arb"
+const ARB = "arbitrum"
 
 const EthUsdcPerpetual = "0xdb282bbace4e375ff2901b84aceb33016d0d663d-1"
 const BtcEthPerpetual = "0xf6b2d76c248af20009188139660a516e5c4e0532-1"
