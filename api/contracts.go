@@ -156,6 +156,8 @@ func buildContractList(chainType string, responsePerpetuals *common.ResponsePerp
 		contract := &model.Contract{
 			PoolAddr:       strings.Split(perp.Id, "-")[0],
 			Index:          index,
+			Symbol:         perp.Symbol,
+			ChainType:      chainType,
 			BaseCurrency:   perp.Underlying,
 			TargetCurrency: perp.CollateralName,
 			TickerId:       fmt.Sprintf("%s-%s", perp.Underlying, perp.CollateralName),

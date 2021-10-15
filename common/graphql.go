@@ -10,6 +10,7 @@ var QueryPerpetuals = `{
   perpetuals(where: {liquidityPool_in: ["%v"]}) {
     id
 	index
+	symbol
     underlying
     collateralName
     openInterest
@@ -20,6 +21,7 @@ var QueryPerpetuals = `{
 type GraphPerpetual struct {
 	Id             string          `json:"id"`
 	Index          string          `json:"index"`
+	Symbol         string          `json:"symbol"`
 	Underlying     string          `json:"underlying"`
 	CollateralName string          `json:"collateralName"`
 	LastPrice      decimal.Decimal `json:"lastPrice"`
