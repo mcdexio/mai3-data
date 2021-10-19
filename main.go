@@ -52,6 +52,7 @@ func main() {
 	data := router.Group("/data")
 	data.GET("/cmc", cmc)
 	data.GET("/contracts", api.Contracts)
+	data.GET("/contracts/:chain_type", api.ContractsByChainType)
 	data.GET("/orderbook/:ticker_id", api.OrderBook)
 
 	// By default it serves on :8080 unless a

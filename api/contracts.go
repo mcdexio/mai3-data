@@ -149,6 +149,102 @@ func Contracts(c *gin.Context) {
 	})
 }
 
+func ContractsByChainType(c *gin.Context) {
+	chainType := c.Param("chain_type")
+	var perpetuals *common.ResponsePerpetuals
+	var liquidityPool map[string]*model.LiquidityPoolStorage
+	subgraphURL := conf.Conf.SubGraphUrlArb1
+	poolAddr := conf.Conf.PoolAddrArb1
+	readerAddr := conf.Conf.ReaderAddrArb1
+	provider := conf.Conf.ProviderArb1
+	var wg sync.WaitGroup
+	wg.Add(2)
+	if chainType == BSC {
+		subgraphURL = conf.Conf.SubGraphUrlBsc
+		poolAddr = conf.Conf.PoolAddrBsc
+		readerAddr = conf.Conf.ReaderAddrBsc
+		provider = conf.Conf.ProviderBsc
+	} else {
+		chainType = ARB
+	}
+	// arb1 network
+	go func() {
+		perpetuals = queryGraph(subgraphURL, poolAddr)
+		wg.Done()
+	}()
+	go func() {
+		client := ethereum.NewClient(provider, readerAddr, poolAddr)
+		liquidityPool = client.GetLiquidityPoolStorage()
+		wg.Done()
+	}()
+	wg.Wait()
+	if perpetuals == nil || liquidityPool == nil {
+		c.JSON(http.StatusOK, model.HttpResponse{
+			Code: -1,
+		})
+		return
+	}
+
+	result := buildContractList(chainType, perpetuals, liquidityPool)
+	newResult := make([]*model.Contract, 0)
+	ethPrice := decimal.Zero
+	// modify contract which is inverse
+	for _, contract := range result {
+		if contract.ContractType == "Inverse" {
+			contract.BaseCurrency, contract.TargetCurrency = contract.TargetCurrency, contract.BaseCurrency
+			contract.BaseVolume, contract.TargetVolume = contract.TargetVolume, contract.BaseVolume
+			contract.IndexCurrency = contract.TargetCurrency
+			contract.ContractPriceCurrency = contract.IndexCurrency
+			if !contract.LastPrice.IsZero() {
+				contract.LastPrice = decimal.NewFromInt(1).Div(contract.LastPrice)
+			}
+			if !contract.Bid.IsZero() {
+				contract.Bid = decimal.NewFromInt(1).Div(contract.Bid)
+			}
+			if !contract.Ask.IsZero() {
+				contract.Ask = decimal.NewFromInt(1).Div(contract.Ask)
+			}
+			if !contract.High.IsZero() {
+				contract.High = decimal.NewFromInt(1).Div(contract.High)
+			}
+			if !contract.Low.IsZero() {
+				contract.Low = decimal.NewFromInt(1).Div(contract.Low)
+			}
+			if !contract.IndexPrice.IsZero() {
+				contract.IndexPrice = decimal.NewFromInt(1).Div(contract.IndexPrice)
+			}
+			if !contract.ContractPrice.IsZero() {
+				contract.ContractPrice = decimal.NewFromInt(1).Div(contract.ContractPrice)
+			}
+			contract.OpenInterest = contract.OpenInterest.Div(contract.LastPrice)
+		}
+
+		// for BTC-ETH perpetual
+		perpetual := fmt.Sprintf("%s-%d", contract.PoolAddr, contract.Index)
+		if perpetual == EthUsdcPerpetual {
+			ethPrice = contract.LastPrice
+		} else if perpetual == BtcEthPerpetual {
+			contract.LastPrice = contract.LastPrice.Mul(ethPrice)
+			contract.Bid = contract.Bid.Mul(ethPrice)
+			contract.Ask = contract.Ask.Mul(ethPrice)
+			contract.High = contract.High.Mul(ethPrice)
+			contract.Low = contract.Low.Mul(ethPrice)
+			contract.IndexPrice = contract.IndexPrice.Mul(ethPrice)
+			contract.ContractPrice = contract.ContractPrice.Mul(ethPrice)
+			contract.TargetVolume = contract.TargetVolume.Mul(ethPrice)
+			contract.TargetCurrency = "USD"
+			contract.IndexCurrency = "USD"
+			contract.ContractPriceCurrency = "USD"
+		}
+
+		newResult = append(newResult, contract)
+	}
+	c.JSON(http.StatusOK, model.HttpResponse{
+		Code: 0,
+		Data: newResult,
+	})
+}
+
 func buildContractList(chainType string, responsePerpetuals *common.ResponsePerpetuals, liquidityPoolStorage map[string]*model.LiquidityPoolStorage) []*model.Contract {
 	var result []*model.Contract
 	for _, perp := range responsePerpetuals.Data.Perpetuals {
