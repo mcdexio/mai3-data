@@ -42,7 +42,7 @@ func queryGraph(graphURL string, poolAddres []string) *common.ResponsePerpetuals
 }
 
 func Contracts(c *gin.Context) {
-	chainType := c.Param("chain_type")
+	chainType := c.Query("chain_type")
 	var perpetuals *common.ResponsePerpetuals
 	var liquidityPool map[string]*model.LiquidityPoolStorage
 	var chainTypes []string
@@ -54,8 +54,7 @@ func Contracts(c *gin.Context) {
 		chainTypes = append(chainTypes, ARB)
 		chainTypes = append(chainTypes, BSC)
 	}
-	var wg sync.WaitGroup
-	wg.Add(2)
+
 	result := make([]*model.Contract, 0)
 	for _, chain := range chainTypes {
 		subgraphURL := conf.Conf.SubGraphUrlArb1
@@ -68,6 +67,8 @@ func Contracts(c *gin.Context) {
 			readerAddr = conf.Conf.ReaderAddrBsc
 			provider = conf.Conf.ProviderBsc
 		}
+		var wg sync.WaitGroup
+		wg.Add(2)
 		go func() {
 			perpetuals = queryGraph(subgraphURL, poolAddr)
 			wg.Done()
@@ -85,7 +86,7 @@ func Contracts(c *gin.Context) {
 			return
 		}
 
-		result = append(result, buildContractList(chainType, perpetuals, liquidityPool)...)
+		result = append(result, buildContractList(chain, perpetuals, liquidityPool)...)
 	}
 
 	newResult := make([]*model.Contract, 0)
